@@ -1768,6 +1768,7 @@ namespace TMPro
                     for (int i = 0; i < val.Length; ++i)
                     {
                         char c = val[i];
+						bool hasValidateUpdatedText = false;
 
                         if (c == '\r' || c == 3)
                             c = '\n';
@@ -1775,7 +1776,11 @@ namespace TMPro
                         if (onValidateInput != null)
                             c = onValidateInput(m_Text, m_Text.Length, c);
                         else if (characterValidation != CharacterValidation.None)
+						{
+							string textBeforeValidate = m_Text;
                             c = Validate(m_Text, m_Text.Length, c);
+                            hasValidateUpdatedText = textBeforeValidate != m_Text;
+						}
 
                         if (lineType == LineType.MultiLineSubmit && c == '\n')
                         {
@@ -1787,7 +1792,8 @@ namespace TMPro
                         }
 
                         // In the case of a Custom Validator, the user is expected to modify the m_Text where as such we do not append c.
-                        if (c != 0 && characterValidation != CharacterValidation.CustomValidator)
+                        // However we will append c if the user did not modify the m_Text (UUM-42147)
+                        if (c != 0 && (characterValidation != CharacterValidation.CustomValidator || !hasValidateUpdatedText))
                             m_Text += c;
                     }
 
@@ -2236,7 +2242,7 @@ namespace TMPro
                         {
                             var textInfo = m_TextComponent.textInfo;
 
-                            if (textInfo != null && textInfo.lineCount >= m_LineLimit)
+                            if (m_LineLimit > 0 && textInfo != null && textInfo.lineCount >= m_LineLimit)
                             {
                                 m_ReleaseSelection = true;
                                 return EditState.Finish;
@@ -4445,7 +4451,7 @@ namespace TMPro
 
             SendOnSubmit();
             DeactivateInputField();
-            eventData.Use();
+            eventData?.Use();
         }
 
         public virtual void OnCancel(BaseEventData eventData)
